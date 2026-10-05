@@ -11,4 +11,7 @@ Route::get('/user', function (Request $request) {
 Route::get('/health', function (){
     return response()->json(['status' => 'ok','service' => 'OrderFlow API'],200);
 });
-Route::get('/orders', [OrderController::class,'index']);
+Route::group(['prefix' => 'orders'],function(){
+    Route::get('', [OrderController::class,'index']);
+    Route::get('/{order}', [OrderController::class,'show']);
+});
