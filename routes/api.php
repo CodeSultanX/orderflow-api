@@ -15,4 +15,6 @@ Route::group(['prefix' => 'orders'],function(){
     Route::get('', [OrderController::class,'index']);
     Route::get('/{order}', [OrderController::class,'show']);
     Route::post('', [OrderController::class,'store']);
+    Route::patch('/{order}', [OrderController::class,'update']);
+    Route::delete('/{order}', [OrderController::class,'destroy']);
 });
