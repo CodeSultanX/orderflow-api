@@ -3,20 +3,27 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ListOrdersRequest;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Order;
-use Illuminate\Http\Request;
+use App\Http\Resources\OrderResource;
 
 class OrderController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(ListOrdersRequest $request)
     {
-        $orders = Order::query()->with('user:id,name')->latest('created_at');
-        return $orders->paginate(15);
+        $filters = $request->validated();
+        $status = $filters['status'] ?? null;
+        $user_id = $filters['user_id'] ?? null;
+        $query = Order::query();
+        if($status) $query->where('status','=',$status);
+        if($user_id)$query->where('user_id','=',$user_id);
+        $orders = $query->with('user:id,name')->latest('created_at');
+        return OrderResource::collection($orders->paginate(15));
     }
 
     /**
@@ -26,7 +33,7 @@ class OrderController extends Controller
     {
         $data = $request->validated();
         $order = Order::create($data)->refresh()->load('user:id,name');
-        return response()->json($order,201);
+        return OrderResource::make($order)->response();
     }
 
     /**
@@ -34,7 +41,7 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-       return $order->load('user:id,name');
+       return OrderResource::make($order->load('user:id,name'));
     }
 
     /**
@@ -44,7 +51,7 @@ class OrderController extends Controller
     {
         $data = $request->validated();
         $order->update($data);
-        return $order->refresh()->load('user:id,name');
+        return OrderResource::make($order->refresh()->load('user:id,name'));
     }
 
     /**
