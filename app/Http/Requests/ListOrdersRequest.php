@@ -24,7 +24,6 @@ class ListOrdersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['sometimes','integer','exists:users,id'],
             'status' => ['sometimes',Rule::in(['new','paid','cancelled'])],
         ];
     }

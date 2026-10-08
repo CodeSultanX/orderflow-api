@@ -7,6 +7,8 @@ use Tests\TestCase;
 use App\Models\Order;
 use App\Models\User;
 
+use Laravel\Sanctum\Sanctum;
+
 class OrderApiTest extends TestCase
 {
 
@@ -18,8 +20,8 @@ class OrderApiTest extends TestCase
      public function test_orders_index_returns_paginated_orders(): void
      {
         $orders = Order::factory()->count(20);
-        User::factory()->has($orders)->create();
-        
+        $user = User::factory()->has($orders)->create();
+        Sanctum::actingAs($user);
         $data = $this->getJson('/api/orders');
         $data->assertOk();
         $data->assertJsonCount(15,'data');
@@ -43,8 +45,9 @@ class OrderApiTest extends TestCase
      public function test_order_can_be_created(): void
      {
         $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
         $data = [
-            'user_id' => $user->id,
             'amount' => 12500.50,
         ];
         $response = $this->postJson('/api/orders',$data);
@@ -60,8 +63,9 @@ class OrderApiTest extends TestCase
 
      public function test_invalid_order_data_returns_validation_errors(): void
      {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
         $data = [
-            'user_id' => 999,
             'status' => 'broken',
             'amount' => -12500.50,
         ];
@@ -73,6 +77,7 @@ class OrderApiTest extends TestCase
      public function test_order_can_be_updated(): void
      {
         $user = User::factory()->create();
+        Sanctum::actingAs($user);
         $order = Order::factory()->for($user)->create(['status' => 'new', 'amount' => 1000]);
         $updateData = [
             'status' => 'paid', 'amount' => 2000.50
@@ -90,6 +95,7 @@ class OrderApiTest extends TestCase
      public function test_order_can_be_deleted(): void
      {
         $user = User::factory()->create();
+        Sanctum::actingAs($user);
         $order = Order::factory()->for($user)->create(['status' => 'new', 'amount' => 1000]);
         $response = $this->deleteJson("/api/orders/{$order->id}");
         $response->assertNoContent();
@@ -97,6 +103,36 @@ class OrderApiTest extends TestCase
             'id' => $order->id,
         ]);
       
+     }
+
+     public function test_user_cannot_view_another_users_order(): void
+     {
+        $owner = User::factory()->create();
+        $user2 = User::factory()->create();
+        $order = Order::factory()->for($owner)->create(['status' => 'new', 'amount' => 1000]);
+        Sanctum::actingAs($user2);
+        $response = $this->getJson("/api/orders/{$order->id}");
+        $response->assertForbidden();
+
+     }
+
+     public function test_user_cannot_update_or_delete_another_users_order(): void
+     {
+        $owner = User::factory()->create();
+        $user2 = User::factory()->create();
+        $order = Order::factory()->for($owner)->create(['status' => 'new', 'amount' => 1500]);
+        Sanctum::actingAs($user2);
+        $updateData = [
+            'status' => 'paid', 'amount' => 2000.50
+        ];
+        $response = $this->patchJson("/api/orders/{$order->id}",$updateData);
+        $response->assertForbidden();
+        $response = $this->deleteJson("/api/orders/{$order->id}");
+        $response->assertForbidden();
+        $this->assertDatabaseHas('orders',[
+            'id' => $order->id,
+            'status' => 'new',
+        ]);
      }
    
     

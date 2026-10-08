@@ -24,7 +24,6 @@ class StoreOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['required','integer','exists:users,id'],
             'status' => ['sometimes',Rule::in(['new','paid','cancelled'])],
             'amount' => ['required','numeric','min:0.01'],
         ];

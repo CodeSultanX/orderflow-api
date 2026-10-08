@@ -8,6 +8,7 @@ use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Order;
 use App\Http\Resources\OrderResource;
+use Illuminate\Support\Facades\Gate;
 
 class OrderController extends Controller
 {
@@ -18,7 +19,7 @@ class OrderController extends Controller
     {
         $filters = $request->validated();
         $status = $filters['status'] ?? null;
-        $user_id = $filters['user_id'] ?? null;
+        $user_id = $request->user()->id;
         $query = Order::query();
         if($status) $query->where('status','=',$status);
         if($user_id)$query->where('user_id','=',$user_id);
@@ -32,6 +33,7 @@ class OrderController extends Controller
     public function store(StoreOrderRequest $request)
     {
         $data = $request->validated();
+        $data['user_id'] = $request->user()->id;
         $order = Order::create($data)->refresh()->load('user:id,name');
         return OrderResource::make($order)->response();
     }
@@ -41,6 +43,7 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
+        Gate::authorize('view',$order);
        return OrderResource::make($order->load('user:id,name'));
     }
 
@@ -49,6 +52,7 @@ class OrderController extends Controller
      */
     public function update(UpdateOrderRequest $request, Order $order)
     {
+        Gate::authorize('update',$order);
         $data = $request->validated();
         $order->update($data);
         return OrderResource::make($order->refresh()->load('user:id,name'));
@@ -59,6 +63,7 @@ class OrderController extends Controller
      */
     public function destroy(Order $order)
     {
+        Gate::authorize('delete',$order);
         $order->delete();
         return response()->noContent(204);
     }
