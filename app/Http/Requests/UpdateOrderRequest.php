@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateOrderRequest extends FormRequest
 {
@@ -24,9 +22,7 @@ class UpdateOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['sometimes','integer','exists:users,id'],
-            'status' => ['sometimes',Rule::in(['new','paid','cancelled'])],
-            'amount' => ['sometimes','numeric','min:0.01'],
+            'amount' => ['sometimes', 'numeric', 'min:0.01'],
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\OrderStatus;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -24,7 +25,7 @@ class ListOrdersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes',Rule::in(['new','paid','cancelled'])],
+            'status' => ['sometimes', Rule::enum(OrderStatus::class)],
         ];
     }
 }

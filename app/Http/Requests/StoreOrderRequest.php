@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreOrderRequest extends FormRequest
 {
@@ -24,8 +22,8 @@ class StoreOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes',Rule::in(['new','paid','cancelled'])],
-            'amount' => ['required','numeric','min:0.01'],
+            'status' => ['prohibited'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
         ];
     }
 }
