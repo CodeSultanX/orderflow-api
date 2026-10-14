@@ -161,6 +161,11 @@ class OrderApiTest extends TestCase
             'id' => $order->id,
             'status' => 'paid',
         ]);
+        $this->assertDatabaseHas('order_status_histories', [
+            'order_id' => $order->id,
+            'from_status' => 'new',
+            'to_status' => 'paid',
+        ]);
     }
 
     public function test_new_order_can_be_cancelled(): void
@@ -174,6 +179,11 @@ class OrderApiTest extends TestCase
         $this->assertDatabaseHas('orders', [
             'id' => $order->id,
             'status' => 'cancelled',
+        ]);
+        $this->assertDatabaseHas('order_status_histories', [
+            'order_id' => $order->id,
+            'from_status' => 'new',
+            'to_status' => 'cancelled',
         ]);
     }
 
@@ -189,5 +199,6 @@ class OrderApiTest extends TestCase
             'id' => $order->id,
             'status' => 'paid',
         ]);
+        $this->assertDatabaseEmpty('order_status_histories');
     }
 }
