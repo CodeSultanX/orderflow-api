@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\SendOrderPaidNotification;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -151,10 +153,12 @@ class OrderApiTest extends TestCase
 
     public function test_new_order_can_be_paid(): void
     {
+        Queue::fake();
         $user = User::factory()->create();
         Sanctum::actingAs($user);
         $order = Order::factory()->for($user)->create(['status' => 'new', 'amount' => 1500]);
         $response = $this->patchJson("/api/orders/{$order->id}/pay");
+        Queue::assertPushed(SendOrderPaidNotification::class);
         $response->assertOk();
         $response->assertJsonPath('data.status', 'paid');
         $this->assertDatabaseHas('orders', [
