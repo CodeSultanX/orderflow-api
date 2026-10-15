@@ -23,6 +23,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::group(['prefix' => 'orders'], function () {
         Route::get('', [OrderController::class, 'index']);
         Route::get('/{order}', [OrderController::class, 'show']);
+        Route::get('/{order}/history', [OrderController::class, 'history']);
         Route::post('', [OrderController::class, 'store']);
         Route::patch('/{order}', [OrderController::class, 'update']);
         Route::patch('/{order}/pay', [OrderController::class, 'pay']);

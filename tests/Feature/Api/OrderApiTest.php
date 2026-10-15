@@ -201,4 +201,29 @@ class OrderApiTest extends TestCase
         ]);
         $this->assertDatabaseEmpty('order_status_histories');
     }
+
+    public function test_owner_can_view_order_status_history(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+        $order = Order::factory()->for($user)->create(['status' => 'new', 'amount' => 1500]);
+        $response = $this->patchJson("/api/orders/{$order->id}/pay");
+        $response->assertOk();
+        $response = $this->getJson("/api/orders/{$order->id}/history");
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.from_status', 'new');
+        $response->assertJsonPath('data.0.to_status', 'paid');
+
+    }
+
+    public function test_user_cannot_view_another_users_order_history(): void
+    {
+        $owner = User::factory()->create();
+        $user2 = User::factory()->create();
+        $order = Order::factory()->for($owner)->create(['status' => 'new', 'amount' => 1500]);
+        Sanctum::actingAs($user2);
+        $response = $this->getJson("/api/orders/{$order->id}/history");
+        $response->assertForbidden();
+    }
 }

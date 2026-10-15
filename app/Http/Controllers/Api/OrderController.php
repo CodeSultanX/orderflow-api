@@ -7,6 +7,7 @@ use App\Http\Requests\ListOrdersRequest;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\OrderStatusHistoryResource;
 use App\Models\Order;
 use App\OrderStatus;
 use App\Services\OrderStatusService;
@@ -18,6 +19,14 @@ class OrderController extends Controller
      * Display a listing of the resource.
      */
     public function __construct(private OrderStatusService $statusService) {}
+
+    public function history(Order $order)
+    {
+        Gate::authorize('view', $order);
+        $histories = $order->statusHistories()->oldest('created_at')->get();
+
+        return OrderStatusHistoryResource::collection($histories);
+    }
 
     public function pay(Order $order)
     {
