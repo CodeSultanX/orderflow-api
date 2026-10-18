@@ -12,6 +12,8 @@ use App\Jobs\SendOrderPaidNotification;
 use App\Models\Order;
 use App\OrderStatus;
 use App\Services\OrderStatusService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
 class OrderController extends Controller
@@ -33,15 +35,42 @@ class OrderController extends Controller
     {
         Gate::authorize('update', $order);
         $order = $this->statusService->transition($order, OrderStatus::Paid);
+        $this->forgetSummaryCache($order->user_id);
         SendOrderPaidNotification::dispatch($order);
 
         return OrderResource::make($order->load('user:id,name'));
+    }
+
+    private function forgetSummaryCache(int $user_id): void
+    {
+        Cache::forget("orders:summary:{$user_id}");
+    }
+
+    public function summary(Request $request)
+    {
+        $user_id = $request->user()->id;
+
+        $data = Cache::remember("orders:summary:{$user_id}", 60, function () use ($user_id) {
+            $total_orders = Order::query()->where('user_id', '=', $user_id)->count();
+            $paid_orders = Order::query()->where('user_id', '=', $user_id)->where('status', '=', OrderStatus::Paid)->count();
+            $paid_amount = Order::query()->where('user_id', '=', $user_id)->where('status', '=', OrderStatus::Paid)->sum('amount');
+
+            return [
+                'total_orders' => $total_orders,
+                'paid_orders' => $paid_orders,
+                'paid_amount' => $paid_amount,
+            ];
+        });
+
+        return response()->json($data, 200);
+
     }
 
     public function cancel(Order $order)
     {
         Gate::authorize('update', $order);
         $order = $this->statusService->transition($order, OrderStatus::Cancelled);
+        $this->forgetSummaryCache($order->user_id);
 
         return OrderResource::make($order->load('user:id,name'));
     }
@@ -71,6 +100,7 @@ class OrderController extends Controller
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         $order = Order::create($data)->refresh()->load('user:id,name');
+        $this->forgetSummaryCache($data['user_id']);
 
         return OrderResource::make($order)->response();
     }
@@ -93,6 +123,7 @@ class OrderController extends Controller
         Gate::authorize('update', $order);
         $data = $request->validated();
         $order->update($data);
+        $this->forgetSummaryCache($order->user_id);
 
         return OrderResource::make($order->refresh()->load('user:id,name'));
     }
@@ -104,6 +135,7 @@ class OrderController extends Controller
     {
         Gate::authorize('delete', $order);
         $order->delete();
+        $this->forgetSummaryCache($order->user_id);
 
         return response()->noContent(204);
     }
