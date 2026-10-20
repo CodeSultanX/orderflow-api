@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\OrderPaid;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ListOrdersRequest;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Http\Resources\OrderStatusHistoryResource;
-use App\Jobs\SendOrderPaidNotification;
 use App\Models\Order;
 use App\OrderStatus;
 use App\Services\OrderStatusService;
@@ -36,7 +36,7 @@ class OrderController extends Controller
         Gate::authorize('update', $order);
         $order = $this->statusService->transition($order, OrderStatus::Paid);
         $this->forgetSummaryCache($order->user_id);
-        SendOrderPaidNotification::dispatch($order);
+        OrderPaid::dispatch($order);
 
         return OrderResource::make($order->load('user:id,name'));
     }
