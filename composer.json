@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "sultan/orderflow-api",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "REST API for order management built with Laravel.",
+    "keywords": ["laravel", "rest-api", "orders", "postgresql"],
     "license": "MIT",
     "require": {
         "php": "^8.3",
