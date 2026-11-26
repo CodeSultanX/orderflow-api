@@ -53,7 +53,7 @@ class OrderController extends Controller
         $data = Cache::remember("orders:summary:{$user_id}", 60, function () use ($user_id) {
             $result = Order::query()->where('user_id', '=', $user_id)->
                             selectRaw('COUNT(*) AS total_orders,
-                                        SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS paid_orders,
+                                        COALESCE(SUM(CASE WHEN status = ? THEN 1 ELSE 0 END), 0) AS paid_orders,
                                         COALESCE(SUM(CASE WHEN status = ? THEN amount ELSE 0 END), 0) AS paid_amount',
                                 [
                                     OrderStatus::Paid->value,
