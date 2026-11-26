@@ -51,14 +51,20 @@ class OrderController extends Controller
         $user_id = $request->user()->id;
 
         $data = Cache::remember("orders:summary:{$user_id}", 60, function () use ($user_id) {
-            $total_orders = Order::query()->where('user_id', '=', $user_id)->count();
-            $paid_orders = Order::query()->where('user_id', '=', $user_id)->where('status', '=', OrderStatus::Paid)->count();
-            $paid_amount = Order::query()->where('user_id', '=', $user_id)->where('status', '=', OrderStatus::Paid)->sum('amount');
+            $result = Order::query()->where('user_id', '=', $user_id)->
+                            selectRaw('COUNT(*) AS total_orders,
+                                        COALESCE(SUM(CASE WHEN status = ? THEN 1 ELSE 0 END), 0) AS paid_orders,
+                                        COALESCE(SUM(CASE WHEN status = ? THEN amount ELSE 0 END), 0) AS paid_amount',
+                                [
+                                    OrderStatus::Paid->value,
+                                    OrderStatus::Paid->value,
+                                ])
+                                ->first();
 
             return [
-                'total_orders' => $total_orders,
-                'paid_orders' => $paid_orders,
-                'paid_amount' => $paid_amount,
+                'total_orders' => $result->total_orders,
+                'paid_orders' => $result->paid_orders,
+                'paid_amount' => $result->paid_amount,
             ];
         });
 

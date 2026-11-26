@@ -231,13 +231,24 @@ class OrderApiTest extends TestCase
         $response->assertForbidden();
     }
 
+    public function test_user_order_empty(): void
+    {
+        $owner = User::factory()->create();
+        Sanctum::actingAs($owner);
+        $response = $this->getJson('/api/orders/summary');
+        $response->assertOk();
+        $response->assertJsonPath('total_orders', 0);
+        $response->assertJsonPath('paid_orders', 0);
+        $response->assertJsonPath('paid_amount', 0);
+    }
+
     public function test_order_summary_is_user_specific_and_cache_is_invalidated_after_creation(): void
     {
         $owner = User::factory()->create();
         $user2 = User::factory()->create();
-        $order_owner_1 = Order::factory()->for($owner)->create(['status' => 'new', 'amount' => 1500]);
-        $order_owner_2 = Order::factory()->for($owner)->create(['status' => 'paid', 'amount' => 1200]);
-        $order_user_2 = Order::factory()->for($user2)->create(['status' => 'paid', 'amount' => 10000]);
+        Order::factory()->for($owner)->create(['status' => 'new', 'amount' => 1500]);
+        Order::factory()->for($owner)->create(['status' => 'paid', 'amount' => 1200]);
+        Order::factory()->for($user2)->create(['status' => 'paid', 'amount' => 10000]);
         Sanctum::actingAs($owner);
         $response = $this->getJson('/api/orders/summary');
         $response->assertOk();
